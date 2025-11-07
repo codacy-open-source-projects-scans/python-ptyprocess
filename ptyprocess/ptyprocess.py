@@ -28,7 +28,14 @@ _is_solaris = (
     _platform.startswith('solaris') or
     _platform.startswith('sunos'))
 
-if _is_solaris:
+try:
+    from os import login_tty
+except ImportError:
+    _no_login_tty = True
+else:
+    _no_login_tty = False
+
+if _is_solaris or _no_login_tty:
     use_native_pty_fork = False
     from . import _fork_pty
 else:
@@ -178,7 +185,7 @@ class PtyProcess(object):
     @classmethod
     def spawn(
             cls, argv, cwd=None, env=None, echo=True, preexec_fn=None,
-            dimensions=(24, 80), pass_fds=()):
+            dimensions=(24, 80), pass_fds=(), **kwargs):
         '''Start the given command in a child process in a pseudo terminal.
 
         This does all the fork/exec type of stuff for a pty, and returns an
@@ -300,7 +307,7 @@ class PtyProcess(object):
                 os._exit(os.EX_OSERR)
 
         # Parent
-        inst = cls(pid, fd)
+        inst = cls(pid, fd, **kwargs)
         
         # Set some informational attributes
         inst.argv = argv
